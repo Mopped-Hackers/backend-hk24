@@ -6,7 +6,6 @@ on:
 jobs:
 
   docker_build:
-    needs: ci
     name: Docker Build
     uses: andrejvysny/workflows/.github/workflows/docker_build_push_ghcr.yaml@main
     with:
