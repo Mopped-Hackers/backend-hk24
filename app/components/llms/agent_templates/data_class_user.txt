@@ -1,0 +1,6 @@
+I've been working on defining data models for a new project using FastAPI, 
+and I've outlined several classes to represent the various entities and operations within the application. 
+These are my classes, please describe it.
+```
+{{data_prompt}}
+```
