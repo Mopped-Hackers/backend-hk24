@@ -136,6 +136,31 @@ def find_py_files_recursively(directory):
             flattened_dict.setdefault(key, []).append(value)
     return flattened_dict
 
+class ClassVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.classes = {}
+
+    def visit_ClassDef(self, node):
+        class_name = node.name
+        attributes = []
+        for n in node.body:
+            if isinstance(n, ast.AnnAssign):
+                if isinstance(n.target, ast.Name):
+                    attributes.append(n.target.id)
+            elif isinstance(n, ast.Assign):
+                for target in n.targets:
+                    if isinstance(target, ast.Name):
+                        attributes.append(target.id)
+        self.classes[class_name] = attributes
+        self.generic_visit(node)
+
+def find_attributes_models(file_path):
+    parsed_code, source_code = read_file(file_path)
+    visitor = ClassVisitor()
+    visitor.visit(parsed_code)
+    classes_and_attributes = visitor.classes
+    return classes_and_attributes
+
 
 if __name__ == "__main__":
     # Assuming 'file_path' is defined and points to a valid Python file.
