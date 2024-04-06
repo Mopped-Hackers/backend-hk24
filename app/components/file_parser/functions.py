@@ -1,5 +1,16 @@
 import ast
 import glob
+import os
+
+def find_py_files(root_directory):
+    py_files = []
+    for root, dirs, files in os.walk(root_directory):
+        # Remove directories named 'test' or 'tests' from traversal
+        dirs[:] = [d for d in dirs if "test" not in d]  # This modifies the dirs list in place
+        for file in files:
+            if file.endswith('.py'):
+                py_files.append(os.path.join(root, file))
+    return py_files
 
 def read_file(file_path):
     """Read the source code from a file and parse it into an AST."""
