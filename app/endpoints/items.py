@@ -13,12 +13,18 @@ async def read_items():
 
 @router.get("/test_summary")
 async def test_summary():
-
+    result_dict = {}
+    url = "KAPPA"
     project_repository_path = "/Users/williambrach/Developer/hackkosice/hk-2024/full-stack-fastapi-template/backend"
     test_path = project_repository_path + "/app/tests"
 
     # TODO readme check
-    readme_text = ""
+    readme_text = functions.merge_readme_contents(project_repository_path)
+
+    if readme_text and readme_text != "":
+        user_text, system_text = prompts.create_prompt_for_readme_summary(readme_text)
+        # readme_summary = engine.call_openai("gpt-4", system_text, user_text)
+        readme_summary = " "
 
     root_dir = project_repository_path + "/"
 
@@ -26,18 +32,29 @@ async def test_summary():
 
     function_name_to_code = {}
     class_to_code = {}
+    function_name_to_path = {}
     for file in python_files:
         project_functions = functions.extract_functions(file)
         python_classes = functions.extract_class_attributes(file)
         for function_name, function_code in project_functions:
             function_name_to_code[function_name] = function_code
+            function_name_to_path[function_name] = file
         for class_name, attributes in python_classes:
             class_to_code[class_name] = attributes
 
     fuction_to_test = functions.find_py_files_recursively(test_path)
-    print("-----------------")
-    print(fuction_to_test.keys())
     business_stories = find_routes.main(project_repository_path)
+
+    result_dict["url"] = {
+        "function_to_code": function_name_to_code,
+        "class_to_code": class_to_code,
+        "function_to_test": fuction_to_test,
+        "files": [],
+        "readme": {"text": readme_text, "summary": readme_summary},
+        "functions": [],
+        "business_stories": {},
+    }
+
     for story_name in business_stories.keys():
         for story_route, story_functions in business_stories[story_name].items():
             for function in story_functions:
@@ -48,17 +65,38 @@ async def test_summary():
 
                 code = function_name_to_code.get(function, " ")
                 test = fuction_to_test.get(function, " ")
+                if code == " ":
+                    continue
 
-                found_code = True if code != " " else False
                 found_test = True if test != " " else False
+                if found_test:
+                    user_text, system_text = (
+                        prompts.create_prompt_for_summary_with_test(code, test)
+                    )
+                else:
+                    user_text, system_text = prompts.create_prompt_for_summary(code)
+                # summary = engine.call_ollama("zephyr", system_text, user_text)
+                summary = " "
 
-    #         user_text, system_text = prompts.create_prompt_for_summary(function_code)
-    #         summary = engine.call_ollama("zephyr", system_text, user_text)
+                user_text_with_comments, system_text_with_comments = (
+                    prompts.create_prompt_for_commenting(code)
+                )
+                code_with_comments = " "
+                # code_with_comments = engine.call_ollama(
+                #     "zephyr", system_text_with_comments, user_text_with_comments
+                # )
+                result_dict["url"]["functions"].append(
+                    {
+                        "name": function,
+                        "path": function_name_to_path.get(function, " "),
+                        "code": code,
+                        "summary": summary,
+                        "code_with_comments": code_with_comments,
+                        "test": test,
+                    }
+                )
 
-    #         user_text_with_comments, system_text_with_comments = prompts.create_prompt_for_commenting(function_code)
-    #         code_with_comments = engine.call_ollama("zephyr", system_text_with_comments, user_text_with_comments)
-
-    return business_stories
+    return result_dict
 
     # function_code = """
     # def calculate_area(radius):

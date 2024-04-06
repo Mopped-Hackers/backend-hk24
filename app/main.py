@@ -4,8 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRouter
 
 from .models import File
-from .routers import items
-from .routers import repository
+from .endpoints import items
+from .endpoints import repository
 
 
 app = FastAPI()
