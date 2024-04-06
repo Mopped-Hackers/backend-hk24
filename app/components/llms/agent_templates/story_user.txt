@@ -1,0 +1,5 @@
+From this business story timeline, create categories.
+```
+{{story}}
+```
+Create output as JSON only.

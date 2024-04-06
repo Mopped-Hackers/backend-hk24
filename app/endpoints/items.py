@@ -45,7 +45,7 @@ async def test_summary():
     fuction_to_test = functions.find_py_files_recursively(test_path)
     business_stories = find_routes.main(project_repository_path)
 
-    result_dict["url"] = {
+    result_dict[url] = {
         "function_to_code": function_name_to_code,
         "class_to_code": class_to_code,
         "function_to_test": fuction_to_test,
@@ -75,17 +75,17 @@ async def test_summary():
                     )
                 else:
                     user_text, system_text = prompts.create_prompt_for_summary(code)
-                # summary = engine.call_ollama("zephyr", system_text, user_text)
-                summary = " "
+                summary = engine.call_ollama("zephyr", system_text, user_text)
+                # summary = " "
 
                 user_text_with_comments, system_text_with_comments = (
                     prompts.create_prompt_for_commenting(code)
                 )
-                code_with_comments = " "
-                # code_with_comments = engine.call_ollama(
-                #     "zephyr", system_text_with_comments, user_text_with_comments
-                # )
-                result_dict["url"]["functions"].append(
+                # code_with_comments = " "
+                code_with_comments = engine.call_ollama(
+                    "zephyr", system_text_with_comments, user_text_with_comments
+                )
+                result_dict[url]["functions"].append(
                     {
                         "name": function,
                         "path": function_name_to_path.get(function, " "),
@@ -96,7 +96,35 @@ async def test_summary():
                     }
                 )
 
-    return result_dict
+    story_summs = []
+    for story_name in business_stories.keys():
+        for story_route, story_functions in business_stories[story_name].items():
+            fix_story_functions = []
+            for function in story_functions:
+                if "router" in function:
+                    continue
+                if "." in function:
+                    function = function.split(".")[1]
+                fix_story_functions.append(function)
+            
+
+            index = 1
+            prompt = ""
+            for f in fix_story_functions:
+                for func in result_dict[url]["functions"]:
+                    if f == func["name"]:
+                        prompt += f"{index}. {f} -> {func['summary']}"
+                        index += 1
+                        break
+                    
+            story_user_prompt, story_system_prompt = prompts.create_prompt_for_story_order(prompt)
+            story_summary = engine.call_openai("gpt-4", story_system_prompt, story_user_prompt)
+            story_summs.append(story_summary)
+    
+
+    return {
+        "prompts": story_summs
+    }
 
     # function_code = """
     # def calculate_area(radius):
