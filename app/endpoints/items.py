@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter
 from app.components.llms import prompts
 from app.components.llms import engine
 from app.components.file_parser import functions, find_routes
 import json
+from app import models
 
 router = APIRouter()
 
@@ -92,6 +93,8 @@ async def test_summary():
                         "test": test,
                     }
                 )
+    ds = models.convert_to_data_story(result_dict, url)
+    return ds
 
     story_summs = []
     for story_name in business_stories.keys():

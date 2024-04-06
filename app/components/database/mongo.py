@@ -67,3 +67,5 @@ class Mongo:
         if delete_result.deleted_count == 1:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         raise HTTPException(status_code=404, detail=f"Log {str(id)} not found")    
+
+
