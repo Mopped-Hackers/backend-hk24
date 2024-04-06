@@ -54,3 +54,13 @@ def create_prompt_for_story_order(story_content: str):
     system_template = env.get_template("story_system.txt")
     system_text = system_template.render()
     return user_text, system_text
+
+def create_promp_for_data_classes(data_classes_content: str):
+    env = Environment(loader=FileSystemLoader("app/components/llms/agent_templates"))
+    user_template = env.get_template("data_class_user.txt")
+    data = {"data_prompt": data_classes_content}
+    user_text = user_template.render(data)
+
+    system_template = env.get_template("data_class_system.txt")
+    system_text = system_template.render()
+    return user_text, system_text
