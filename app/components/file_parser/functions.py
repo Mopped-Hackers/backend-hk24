@@ -22,6 +22,24 @@ def read_file(file_path):
         source_code = file.read()
     return ast.parse(source_code), source_code
 
+def merge_readme_contents(start_directory):
+    """
+    Finds all README files in the specified directory and its subdirectories,
+    then merges their contents into a single string and returns it.
+    
+    :param start_directory: Directory to start searching for README files.
+    :return: A string containing the merged contents of all README files.
+    """
+    # Use glob to find all README files (case-insensitive search)
+    readme_files = glob.glob(os.path.join(start_directory, '**', '[Rr][Ee][Aa][Dd][Mm][Ee]*'), recursive=True)
+    
+    merged_content = ""  # Initialize an empty string to store the merged content
+    
+    for readme_file in readme_files:
+        with open(readme_file, 'r', encoding='utf-8') as infile:
+            merged_content += infile.read() + '\n\n'  # Read each file and append its content followed by two newlines
+    
+    return merged_content
 
 def extract_functions(file_path):
     """Extract function names and their source code from the AST."""
