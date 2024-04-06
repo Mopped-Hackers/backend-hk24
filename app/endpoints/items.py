@@ -2,7 +2,6 @@ from fastapi import APIRouter
 from app.components.llms import prompts
 from app.components.llms import engine
 from app.components.file_parser import functions, find_routes
-import json
 from app import models
 
 router = APIRouter()
@@ -10,7 +9,7 @@ router = APIRouter()
 
 @router.get("/test_summary")
 async def test_summary():
-
+    
     result_dict = {}
     url = "KAPPA"
     project_repository_path = "/Users/williambrach/Developer/hackkosice/hk-2024/full-stack-fastapi-template/backend"

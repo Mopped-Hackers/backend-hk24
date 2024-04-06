@@ -18,7 +18,6 @@ class Log(BaseModel):
     class Config:
         allow_population_by_field_name = True
 
-
 class Functions(BaseModel):
     path: str
     name: str
@@ -29,9 +28,7 @@ class Functions(BaseModel):
 class Readme(BaseModel):
     text: str
     summary: str
-
-        
-
+  
 class DataStory(BaseModel):
     key: str  # Repository URL
     functions_to_test: dict
