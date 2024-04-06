@@ -1,0 +1,4 @@
+User inputs a Python function that they want to comment. For instance:
+```
+{{function_code}}
+```
