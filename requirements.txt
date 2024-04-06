@@ -1,3 +1,5 @@
 fastapi
 gitpython
 uvicorn[standard]
+pydantic
+motor 
