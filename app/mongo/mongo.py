@@ -6,7 +6,6 @@ app = FastAPI()
 
 
 
-
 class Mongo:
 
 
@@ -14,3 +13,4 @@ class Mongo:
 
 
         return
+    
