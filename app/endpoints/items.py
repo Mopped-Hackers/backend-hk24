@@ -2,17 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.components.llms import prompts
 from app.components.llms import engine
 from app.components.file_parser import functions, find_routes
+import json
 
 router = APIRouter()
 
 
-@router.get("/items")
-async def read_items():
-    return {"plumbus": {"name": "Plumbus"}, "gun": {"name": "Portal Gun"}}
-
-
 @router.get("/test_summary")
 async def test_summary():
+
     result_dict = {}
     url = "KAPPA"
     project_repository_path = "/Users/williambrach/Developer/hackkosice/hk-2024/full-stack-fastapi-template/backend"
@@ -75,16 +72,16 @@ async def test_summary():
                     )
                 else:
                     user_text, system_text = prompts.create_prompt_for_summary(code)
-                summary = engine.call_ollama("zephyr", system_text, user_text)
-                # summary = " "
+                # summary = engine.call_ollama("zephyr", system_text, user_text)
+                summary = " "
 
                 user_text_with_comments, system_text_with_comments = (
                     prompts.create_prompt_for_commenting(code)
                 )
-                # code_with_comments = " "
-                code_with_comments = engine.call_ollama(
-                    "zephyr", system_text_with_comments, user_text_with_comments
-                )
+                code_with_comments = " "
+                # code_with_comments = engine.call_ollama(
+                #     "codellama", system_text_with_comments, user_text_with_comments
+                # )
                 result_dict[url]["functions"].append(
                     {
                         "name": function,
@@ -106,7 +103,6 @@ async def test_summary():
                 if "." in function:
                     function = function.split(".")[1]
                 fix_story_functions.append(function)
-            
 
             index = 1
             prompt = ""
@@ -116,20 +112,110 @@ async def test_summary():
                         prompt += f"{index}. {f} -> {func['summary']}"
                         index += 1
                         break
-                    
-            story_user_prompt, story_system_prompt = prompts.create_prompt_for_story_order(prompt)
+
+            story_user_prompt, story_system_prompt = (
+                prompts.create_prompt_for_story_order(prompt)
+            )
             story_summary = engine.call_openai("gpt-4", story_system_prompt, story_user_prompt)
+#             story_summary = """
+#                         Based on the business story timeline, the categories can be grouped into "User Management", "Email Management", and "Security Management". Here is the JSON schema format:
+
+# ```json
+# {
+#   "title": "AnalysisResponse",
+#   "type": "object",
+#   "required": ["groupings"],
+#   "properties": {
+#     "groupings": {
+#       "type": "array",
+#       "title": "Groupings",
+#       "items": {
+#         "$ref": "#/$defs/Grouping"
+#       }
+#     }
+#   },
+#   "$defs": {
+#     "GroupItem": {
+#       "type": "object",
+#       "title": "GroupItem",
+#       "required": ["name"],
+#       "properties": {
+#         "name": {
+#           "type": "string",
+#           "title": "Name"
+#         }
+#       }
+#     },
+#     "Grouping": {
+#       "type": "object",
+#       "title": "Grouping",
+#       "required": ["group_name", "items"],
+#       "properties": {
+#         "group_name": {
+#           "type": "string",
+#           "title": "Group Name"
+#         },
+#         "items": {
+#           "type": "array",
+#           "title": "Items",
+#           "items": {
+#             "$ref": "#/$defs/GroupItem"
+#           }
+#         }
+#       }
+#     }
+#   },
+#   "groupings": [
+#     {
+#       "group_name": "User Management",
+#       "items": [
+#         {
+#           "name": "get_user_by_email"
+#         },
+#         {
+#           "name": "create_user"
+#         }
+#       ]
+#     },
+#     {
+#       "group_name": "Email Management",
+#       "items": [
+#         {
+#           "name": "generate_new_account_email"
+#         },
+#         {
+#           "name": "send_email"
+#         }
+#       ]
+#     },
+#     {
+#       "group_name": "Security Management",
+#       "items": [
+#         {
+#           "name": "get_password_hash"
+#         }
+#       ]
+#     }
+#   ]
+# }
+# ```
+#             """
+
+            story_summary = prompts.fix_analysis_response(story_summary)
             story_summs.append(story_summary)
-    
+            prompt = ""
+            for s in story_summary:
+                i = [s_i['name'] for s_i in s['items']]
+                for z in i:
+                    for func in result_dict[url]["functions"]:
+                        if z == func["name"]:
+                            prompt += f"""function name : {f}, 
+                            function summary :  {func['summary']},
+                            function code : {func['code']}"""
+            
+            story_user_prompt, story_system_prompt = (
+                prompts.create_prompt_for_story(prompt)
+            )
+            story = engine.call_openai("gpt-4", story_system_prompt, story_user_prompt)
 
-    return {
-        "prompts": story_summs
-    }
-
-    # function_code = """
-    # def calculate_area(radius):
-    # pi = 3.14
-    # return pi * (radius ** 2)
-    # """
-
-    # return {"summary": summary, "code_with_comments": code_with_comments}
+            return {"prompts": story_summs, "splits": story}

@@ -1,4 +1,7 @@
 from jinja2 import Environment, FileSystemLoader
+from pydantic import BaseModel
+from typing import List, Optional
+import json
 
 
 def create_prompt_for_summary(function_content: str):
@@ -35,6 +38,7 @@ def create_prompt_for_commenting(function_content: str):
     system_text = system_template.render()
     return user_text, system_text
 
+
 def create_prompt_for_readme_summary(readme_content: str):
     env = Environment(loader=FileSystemLoader("app/components/llms/agent_templates"))
     user_template = env.get_template("readme_user.txt")
@@ -45,7 +49,38 @@ def create_prompt_for_readme_summary(readme_content: str):
     system_text = system_template.render()
     return user_text, system_text
 
+
+class GroupItem(BaseModel):
+    name: str
+
+
+class Grouping(BaseModel):
+    group_name: str
+    items: List[GroupItem]
+
+
+class AnalysisResponse(BaseModel):
+    groupings: List[Grouping]
+
+
+def get_analysis_response_json_schema():
+    schema = AnalysisResponse.schema()
+    schema_json = json.dumps(schema, indent=2)
+    return schema_json
+
+
 def create_prompt_for_story_order(story_content: str):
+    env = Environment(loader=FileSystemLoader("app/components/llms/agent_templates"))
+    user_template = env.get_template("story_order_user.txt")
+    data = {"story": story_content, "json_schema": get_analysis_response_json_schema()}
+    user_text = user_template.render(data)
+
+    system_template = env.get_template("story_order_system.txt")
+    system_text = system_template.render()
+    return user_text, system_text
+
+
+def create_prompt_for_story(story_content: str):
     env = Environment(loader=FileSystemLoader("app/components/llms/agent_templates"))
     user_template = env.get_template("story_user.txt")
     data = {"story": story_content}
@@ -54,6 +89,7 @@ def create_prompt_for_story_order(story_content: str):
     system_template = env.get_template("story_system.txt")
     system_text = system_template.render()
     return user_text, system_text
+
 
 def create_promp_for_data_classes(data_classes_content: str):
     env = Environment(loader=FileSystemLoader("app/components/llms/agent_templates"))
@@ -64,3 +100,28 @@ def create_promp_for_data_classes(data_classes_content: str):
     system_template = env.get_template("data_class_system.txt")
     system_text = system_template.render()
     return user_text, system_text
+
+
+def fix_analysis_response(response: str):
+    try:
+        response = response.split("```")[1:2][0].replace("json", "")
+        response = json.loads(response)["groupings"]
+        return response
+    except Exception:
+        response = []
+
+    try:
+        response = json.loads(response)
+        response = response["groupings"]
+        return response
+    except Exception:
+        response = []
+
+    try:
+        response = json.loads(response.replace("```", "").replace("json", ""))
+        response = response["groupings"]
+        return response
+    except Exception:
+        response = []
+
+    return response

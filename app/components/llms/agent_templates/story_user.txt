@@ -1,5 +1,4 @@
-From this business story timeline, create categories.
+Create business case from this background.
 ```
 {{story}}
 ```
-Create output as JSON only.

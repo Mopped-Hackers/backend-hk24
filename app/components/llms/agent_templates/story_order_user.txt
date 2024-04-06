@@ -1,0 +1,8 @@
+From this business story timeline, create categories.
+```
+{{story}}
+```
+Output should be in this json schema format
+```
+{{json_schema}}
+```
