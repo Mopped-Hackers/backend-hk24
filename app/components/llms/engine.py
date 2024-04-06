@@ -25,6 +25,5 @@ def call_ollama(model: str, system_message: str, user_message: str):
 
     # TODO dump into mongodb
 
-    content = response["message"]['content']
+    content = response["message"]["content"]
     return content
-

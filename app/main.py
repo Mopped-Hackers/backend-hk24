@@ -14,8 +14,6 @@ database = client.your_database_name
 collection = database.your_collection_name
 
 
-
-
 app = FastAPI()
 router = APIRouter()
 
@@ -29,10 +27,12 @@ app.add_middleware(
 app.include_router(items.router)
 app.include_router(repository.router)
 
+
 @app.on_event("startup")
 async def startup_db_client():
     app.mongodb_client = AsyncIOMotorClient(MONGO_DETAILS)
     app.mongodb = app.mongodb_client.your_database_name
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

@@ -9,18 +9,21 @@ class EndpointVisitor(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node):
         # Collect calls for all functions
-        self.all_functions[node.name] = {'functions': self.get_function_calls(node)}
+        self.all_functions[node.name] = {"functions": self.get_function_calls(node)}
 
         # Check for decorators that indicate an endpoint
         for decorator in node.decorator_list:
-            if isinstance(decorator, ast.Call) and hasattr(decorator.func, 'attr') and decorator.func.attr in ['get',
-                                                                                                               'post',
-                                                                                                               'put',
-                                                                                                               'delete']:
-                endpoint_path = decorator.args[0].s if decorator.args else ''
+            if (
+                isinstance(decorator, ast.Call)
+                and hasattr(decorator.func, "attr")
+                and decorator.func.attr in ["get", "post", "put", "delete"]
+            ):
+                endpoint_path = decorator.args[0].s if decorator.args else ""
                 if node.name not in self.endpoints:
-                    self.endpoints[node.name] = {'path': endpoint_path, 'functions': []}
-                self.endpoints[node.name]['functions'].extend(self.get_function_calls(node))
+                    self.endpoints[node.name] = {"path": endpoint_path, "functions": []}
+                self.endpoints[node.name]["functions"].extend(
+                    self.get_function_calls(node)
+                )
 
         self.generic_visit(node)
 
@@ -39,19 +42,19 @@ class EndpointVisitor(ast.NodeVisitor):
                     if isinstance(current, ast.Name):
                         func_call_parts.append(current.id)
                     func_call_parts.reverse()
-                    full_func_call = '.'.join(func_call_parts)
+                    full_func_call = ".".join(func_call_parts)
                     function_calls.append(full_func_call)
         return function_calls
 
 
 def parse_file_to_ast(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         source_code = file.read()
     return ast.parse(source_code)
 
 
 def is_python_file(file_name):
-    return file_name.endswith('.py')
+    return file_name.endswith(".py")
 
 
 def process_file(file_path):
@@ -65,15 +68,15 @@ def find_functions_starting_with_def(directory_path):
     functions = []
     for root, dirs, files in os.walk(directory_path):
         for file_name in files:
-            if file_name.endswith('.py'):
+            if file_name.endswith(".py"):
                 file_path = os.path.join(root, file_name)
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as file:
+                    with open(file_path, "r", encoding="utf-8") as file:
                         for line in file:
                             stripped_line = line.strip()
-                            if stripped_line.startswith('def '):
-                                function_name = stripped_line.split('(')[0][4:]
-                                file_name = file_name.replace('.py', '')
+                            if stripped_line.startswith("def "):
+                                function_name = stripped_line.split("(")[0][4:]
+                                file_name = file_name.replace(".py", "")
                                 functions.append(f"{file_name}.{function_name}")
                                 functions.append(function_name)
                 except Exception as e:
@@ -96,8 +99,8 @@ def append_dependencies_functions(functions, new_functions):
 def make_output(functions):
     output = {}
     for key, values in functions.items():
-        parsed_key = key.split(' ')[0]
-        ep = key.split(' ')[1]
+        parsed_key = key.split(" ")[0]
+        ep = key.split(" ")[1]
         if parsed_key not in output:
             output[parsed_key] = {}
         output[parsed_key][ep] = values
@@ -125,13 +128,13 @@ def main(directory_path):
                 try:
                     endpoints, all_functions = process_file(file_path)
                     for endpoint, details in endpoints.items():
-                        ff = details['functions']
+                        ff = details["functions"]
                         key = f"{file_name} {details['path']}"
                         functions[key] = ff
 
                     for func, details in all_functions.items():
-                        ff = details['functions']
-                        file_name = file_name.replace('py', '')
+                        ff = details["functions"]
+                        file_name = file_name.replace("py", "")
                         key = f"{file_name}{func}"
                         new_functions[key] = ff
 
@@ -143,8 +146,3 @@ def main(directory_path):
     output = make_output(functions)
     print(output)
     return output
-
-
-if __name__ == "__main__":
-    ABSOLUTE_PATH = os.path.abspath('backend')
-    main(ABSOLUTE_PATH)
