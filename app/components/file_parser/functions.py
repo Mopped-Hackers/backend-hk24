@@ -155,10 +155,12 @@ class ClassVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
 def find_attributes_models(file_path):
-    parsed_code, source_code = read_file(file_path)
+    py_files = glob.glob(f"{file_path}/**/*.py", recursive=True)
     visitor = ClassVisitor()
-    visitor.visit(parsed_code)
-    classes_and_attributes = visitor.classes
+    for py_file in py_files:
+        parsed_code, source_code = read_file(py_file)
+        visitor.visit(parsed_code)
+        classes_and_attributes = visitor.classes
     return classes_and_attributes
 
 
