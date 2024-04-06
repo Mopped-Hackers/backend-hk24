@@ -7,7 +7,6 @@ from .routers import repository
 from .components.database.mongo import Mongo
 from .models import Log
 from typing import List
-from .models import File
 from .endpoints import items
 from .endpoints import repository
 
@@ -27,7 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(repository.router)
+app.include_router(items.router)
 app.include_router(router)
+
 
 
 
