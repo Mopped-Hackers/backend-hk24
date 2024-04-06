@@ -35,7 +35,8 @@ async def test_summary():
             class_to_code[class_name] = attributes
 
     fuction_to_test = functions.find_py_files_recursively(test_path)
-
+    print("-----------------")
+    print(fuction_to_test.keys())
     business_stories = find_routes.main(project_repository_path)
     for story_name in business_stories.keys():
         for story_route, story_functions in business_stories[story_name].items():

@@ -73,31 +73,22 @@ class FunctionCallVisitor(ast.NodeVisitor):
 
     def visit_Call(self, node):
         if self.current_function_node:
+            function_call_name = None
+
             # Check if the call is a simple function call (e.g., function_name())
             if isinstance(node.func, ast.Name):
                 function_call_name = node.func.id
-            # Additionally, check if the call is a method call (e.g., self.method())
-            elif (
-                isinstance(node.func, ast.Attribute)
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id == "self"
-            ):
+            
+            # Check if the call is a method call on any object (e.g., object.method() or self.method())
+            elif isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
+                # This will now include method calls on any object, not just 'self'
                 function_call_name = f"{node.func.value.id}.{node.func.attr}"
-            else:
-                self.generic_visit(node)
-                return  # Exit the method if neither condition is met
-
-            outer_function_code = ast.get_source_segment(
-                self.source_code, self.current_function_node
-            )
-            self.function_calls_within_functions[function_call_name] = (
-                outer_function_code
-            )
+            
+            if function_call_name:
+                outer_function_code = ast.get_source_segment(self.source_code, self.current_function_node)
+                self.function_calls_within_functions[function_call_name] = outer_function_code
+                
         self.generic_visit(node)
-        self.dog()
-
-    def dog(self):
-        pass
 
 
 def extract_function_calls(file_path):
