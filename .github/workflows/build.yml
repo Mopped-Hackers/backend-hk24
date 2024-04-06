@@ -10,7 +10,7 @@ jobs:
     uses: andrejvysny/workflows/.github/workflows/docker_build_push_ghcr.yaml@main
     with:
       context: .
-      tags: ghcr.io/andrejvysny/backend-hk24
+      tags: ghcr.io/mopped-hackers/backend-hk24
       dockerfile: ./.docker/Dockerfile
     secrets:
       access_token: ${{ secrets.GITHUB_TOKEN }}
