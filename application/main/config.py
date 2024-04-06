@@ -1,9 +1,10 @@
 # configs.py
+import os
+from os import environ
 from pathlib import Path
 from typing import Optional
-import os
-from pydantic import BaseSettings, Field, BaseModel
-from os import environ
+
+from pydantic import BaseModel, BaseSettings, Field
 
 
 class AppConfig(BaseModel):
@@ -76,10 +77,10 @@ class ProdConfig(GlobalConfig):
 class FactoryConfig:
     """Returns a config instance depending on the ENV_STATE variable."""
 
-    def __init__(self, env_state: Optional[str]):
+    def __init__(self, env_state: Optional[str]) -> None:
         self.env_state = env_state
 
-    def __call__(self):
+    def __call__(self) -> GlobalConfig:
         if self.env_state == "dev":
             return DevConfig()
 
@@ -88,7 +89,7 @@ class FactoryConfig:
 
 
 class EnvConfig:
-    def __init__(self):
+    def __init__(self) -> None:
         self.AI_URL = ""
         self.WINECELLAR_URL = ""
         self.API_NAME = "API"
@@ -100,9 +101,3 @@ class EnvConfig:
 
 
 settings = FactoryConfig(GlobalConfig().ENV_STATE)()
-
-# if None == settings:
-#     settings = EnvConfig()
-# if "URL" in os.environ:
-#     name = os.getenv("URL", "BAD_AI_URL_STRING")
-#     settings.AI_URL = name

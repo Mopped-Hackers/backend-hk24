@@ -1,14 +1,15 @@
-import uvicorn
 import subprocess
-from fastapi import FastAPI
+from uuid import uuid4
+
+import uvicorn
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from application.initializer import IncludeAPIRouter
 from application.main.config import settings
-from fastapi.exceptions import RequestValidationError
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from fastapi import FastAPI, Response, status, Depends, Request, HTTPException
-from uuid import uuid4
 
 
 def get_application():

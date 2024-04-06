@@ -14,9 +14,10 @@ class YamlConfigReader(ConfigReaderInterface):
         super(YamlConfigReader, self).__init__()
 
     def read_config_from_file(self, config_filename: str):
-        conf_path = Path(__file__).joinpath(
-            settings.APP_CONFIG.SETTINGS_DIR, config_filename
-        )
+        # conf_path = Path(__file__).joinpath(
+        #     settings.APP_CONFIG.SETTINGS_DIR, config_filename
+        # )
+        conf_path = "settings/logging_config.yaml"
         with open(conf_path) as file:
             config = yaml.safe_load(file)
         config_object = Struct(**config)
