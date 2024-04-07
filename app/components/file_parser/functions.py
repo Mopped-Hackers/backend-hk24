@@ -51,6 +51,50 @@ def extract_functions(file_path):
             functions_with_code.append((node.name, function_code))
     return functions_with_code
 
+def get_function_names(filename, first_items):
+    """
+    Gets the names of specific functions defined in a Python file.
+
+    Parameters:
+    - filename (str): The path to the Python file.
+    - first_items (list): A list of function names to include.
+
+    Returns:
+    - List of function names.
+    """
+    function_names = []
+    with open(filename, "r") as file:
+        node = ast.parse(file.read(), filename=filename)
+        for item in node.body:
+            if (isinstance(item, ast.FunctionDef) or isinstance(item, ast.AsyncFunctionDef)) and item.name in first_items:
+                function_names.append(item.name)
+    return function_names
+
+def print_directory_structure(startpath):
+    """
+    Returns the directory structure of a given path and lists function names for Python files.
+
+    Parameters:
+    - startpath (str): The root directory path from which to start listing the structure.
+
+    Returns:
+    - Dict: The structure of the directory and function names.
+    """
+    structure = {}
+    for root, dirs, files in os.walk(startpath, topdown=True):
+        path_key = root.replace(startpath, '').strip(os.sep)
+        structure[path_key] = {'dirs': {}, 'files': {}}
+        for dir_name in dirs:
+            structure[path_key]['dirs'][dir_name] = {}
+        for f in files:
+            file_path = os.path.join(root, f)
+            if f.endswith('.py'):
+                functions = extract_functions(file_path)
+                first_items = [item[0] for item in functions]
+                structure[path_key]['files'][f] = get_function_names(file_path, first_items)
+            else:
+                structure[path_key]['files'][f] = None
+    return structure
 
 def extract_class_attributes(file_path):
     """Extract class names and attributes assigned to self in their __init__ method."""
