@@ -2,8 +2,8 @@ import ast
 import glob
 import os
 import json
-import find_routes
 
+import app.components.file_parser.find_routes as find_routes
 
 def find_py_files(root_directory):
     py_files = []
