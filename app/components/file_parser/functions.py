@@ -2,6 +2,7 @@ import ast
 import glob
 import os
 import json
+import find_routes
 
 
 def find_py_files(root_directory):
@@ -72,6 +73,7 @@ def get_function_names(filename, first_items):
     return function_names
 
 def print_directory_structure(startpath):
+    startpath = 'C:\\Users\\Peter\\Desktop\\full-stack-fastapi-template\\backend'
     """
     Returns the directory structure of a given path and lists function names for Python files.
 
@@ -81,6 +83,7 @@ def print_directory_structure(startpath):
     Returns:
     - Dict: The structure of the directory and function names.
     """
+    functions = find_routes.main(startpath)
     structure = {}
     for root, dirs, files in os.walk(startpath, topdown=True):
         path_key = root.replace(startpath, '').strip(os.sep)
@@ -92,8 +95,8 @@ def print_directory_structure(startpath):
         for f in files:
             file_path = os.path.join(root, f)
             if f.endswith('.py'):
-                functions = extract_functions(file_path)
-                first_items = [item[0] for item in functions]
+                first_items = [item.split('.')[-1] for _, endpoints in functions.items() for _, functions in endpoints.items() for item in functions]
+
                 structure[path_key]['files'][f] = get_function_names(file_path, first_items)
     structure = json.dumps(structure)
     return structure
