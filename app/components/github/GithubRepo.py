@@ -1,5 +1,6 @@
 import os
 from git import Repo
+import shutil
 
 
 def extract_repo_name_from_url(url):
@@ -21,8 +22,13 @@ def download_repo(url: str) -> str:
     uploads_repo_folder = os.path.join(root_path, 'uploads/repos')
     if not os.path.exists(uploads_repo_folder):
         os.makedirs(uploads_repo_folder)
-
+        
+        
     path = os.path.join(uploads_repo_folder, extract_repo_name_from_url(url))
+
+    if os.path.exists(path):
+        shutil.rmtree(path)
+        
     try:
         Repo.clone_from(url, path)
     except:
