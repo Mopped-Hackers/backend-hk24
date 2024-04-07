@@ -2,7 +2,6 @@ from fastapi import APIRouter
 from app.components.llms import prompts
 from app.components.llms import engine
 from app.components.file_parser import functions, find_routes
-import json
 from app import models
 
 router = APIRouter()
@@ -10,7 +9,7 @@ router = APIRouter()
 
 @router.get("/test_summary")
 async def test_summary():
-
+    
     result_dict = {}
     url = "KAPPA"
     project_repository_path = "/Users/williambrach/Developer/hackkosice/hk-2024/full-stack-fastapi-template/backend"
@@ -23,6 +22,12 @@ async def test_summary():
         user_text, system_text = prompts.create_prompt_for_readme_summary(readme_text)
         # readme_summary = engine.call_openai("gpt-4", system_text, user_text)
         readme_summary = " "
+
+    class_data_text = functions.find_attributes_models(project_repository_path)
+    if class_data_text and class_data_text != "":
+        user_text, system_text = prompts.create_promp_for_data_classes(class_data_text)
+        #class_data_summary = engine.call_openai("gpt-4", system_text, user_text)
+        class_data_summary = " "
 
     root_dir = project_repository_path + "/"
 
@@ -51,6 +56,7 @@ async def test_summary():
         "readme": {"text": readme_text, "summary": readme_summary},
         "functions": [],
         "business_stories": {},
+        "class_data": class_data_summary,
     }
 
     for story_name in business_stories.keys():
