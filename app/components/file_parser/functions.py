@@ -1,6 +1,7 @@
 import ast
 import glob
 import os
+import json
 
 
 def find_py_files(root_directory):
@@ -51,6 +52,51 @@ def extract_functions(file_path):
             functions_with_code.append((node.name, function_code))
     return functions_with_code
 
+def get_function_names(filename, first_items):
+    """
+    Gets the names of specific functions defined in a Python file.
+
+    Parameters:
+    - filename (str): The path to the Python file.
+    - first_items (list): A list of function names to include.
+
+    Returns:
+    - List of function names.
+    """
+    function_names = []
+    with open(filename, "r") as file:
+        node = ast.parse(file.read(), filename=filename)
+        for item in node.body:
+            if (isinstance(item, ast.FunctionDef) or isinstance(item, ast.AsyncFunctionDef)) and item.name in first_items:
+                function_names.append(item.name)
+    return function_names
+
+def print_directory_structure(startpath):
+    """
+    Returns the directory structure of a given path and lists function names for Python files.
+
+    Parameters:
+    - startpath (str): The root directory path from which to start listing the structure.
+
+    Returns:
+    - Dict: The structure of the directory and function names.
+    """
+    structure = {}
+    for root, dirs, files in os.walk(startpath, topdown=True):
+        path_key = root.replace(startpath, '').strip(os.sep)
+        if not path_key:  # If path_key is empty, meaning it's the root
+            path_key = "root"
+        structure[path_key] = {"dirs": {}, "files": {}}
+        for dir_name in dirs:
+            structure[path_key]['dirs'][dir_name] = {}
+        for f in files:
+            file_path = os.path.join(root, f)
+            if f.endswith('.py'):
+                functions = extract_functions(file_path)
+                first_items = [item[0] for item in functions]
+                structure[path_key]['files'][f] = get_function_names(file_path, first_items)
+    structure = json.dumps(structure)
+    return structure
 
 def extract_class_attributes(file_path):
     """Extract class names and attributes assigned to self in their __init__ method."""
@@ -138,20 +184,27 @@ def find_py_files_recursively(directory):
 
 class ClassVisitor(ast.NodeVisitor):
     def __init__(self):
+        super().__init__()
         self.classes = {}
 
     def visit_ClassDef(self, node):
         class_name = node.name
-        attributes = []
+        attributes = {}
+        methods = {}
+        # Capture the entire class code from the source
+        class_code = ast.unparse(node) if hasattr(ast, 'unparse') else 'Class code unavailable'
+
         for n in node.body:
-            if isinstance(n, ast.AnnAssign):
-                if isinstance(n.target, ast.Name):
-                    attributes.append(n.target.id)
-            elif isinstance(n, ast.Assign):
+            if isinstance(n, ast.Assign):
+                # Handle simple assignments (without explicit type annotations)
                 for target in n.targets:
                     if isinstance(target, ast.Name):
-                        attributes.append(target.id)
-        self.classes[class_name] = attributes
+                        attributes[target.id] = target.id
+            elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                # Capture method names
+                methods[n.name] = ast.unparse(n) if hasattr(ast, 'unparse') else f'{n.name} method code unavailable'
+
+        self.classes[class_name] = class_code
         self.generic_visit(node)
 
 def find_attributes_models(file_path):
