@@ -63,9 +63,9 @@ async def get_status(request: Request,url: str):
 
     filename = f"./structured_output_{story.url}_{story.id}.pdf"
 
-    url = f"{request.url.scheme}://{request.headers['host']}/static/{filename}"
+    output = f"{request.url.scheme}://{request.headers['host']}/static/{filename}"
 
-    return {"url": url, "status": status_dict.get(url, "not found"), "output": url}
+    return {"url": url, "status": status_dict.get(url, "not found"), "output": output}
 
 
 @app.get("/test-pdf")
