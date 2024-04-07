@@ -5,6 +5,7 @@ from pydantic import ConfigDict, BaseModel, Field, EmailStr
 from pydantic.functional_validators import BeforeValidator
 from datetime import date, datetime, time, timedelta
 from bson import ObjectId
+from urllib.parse import unquote
 
 from typing_extensions import Annotated
 
@@ -30,18 +31,32 @@ class Readme(BaseModel):
     text: str
     summary: str
 
+
+def getDummyStory():
+    dataStory: DataStory = DataStory(
+        url="test.com?time=" + str(datetime.now().timestamp()),
+        functions_to_test={"test": "test"},
+        functions_to_code={"test": "test"},
+        files=["test"],
+        functions=[Functions(path="test", name="test", code="test", code_commented="test", summary="test")],
+        readme=Readme(text="test", summary="test")
+    )
+    return dataStory
         
 
 class DataStory(BaseModel):
-    key: str  # Repository URL
-    functions_to_test: dict
-    functions_to_code: dict
-    files: List[str]
-    functions: List[Functions]
-    readme: Readme
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    url: str = Field(default="")  # Repository URL
+    functions_to_test: dict= Field(default={})
+    functions_to_code: dict= Field(...)
+    files: List[str]= Field(...)
+    functions: List[Functions]= Field(...)
+    readme: Readme= Field(...)
 
     class Config:
         arbitrary_types_allowed = True
+        allow_population_by_field_name = True
+
 
 def convert_to_data_story(result_dict, url) -> DataStory:
     # Extract the necessary data from the dictionary

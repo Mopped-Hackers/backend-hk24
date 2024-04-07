@@ -7,12 +7,15 @@ from .routers import repository
 from .components.database.mongo import Mongo
 from .models import Log
 from typing import List
-from .endpoints import items
-from .endpoints import repository
-
+from .routers import items
+from .routers import repository
+from .routers import logs
+from .routers import stories
 import asyncio
 from typing import Dict
+from .models import getDummyStory
 
+from .models import DataStory, Functions, Readme
 app = FastAPI()
 router = APIRouter()
 
@@ -25,12 +28,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 app.include_router(repository.router)
 app.include_router(items.router)
-app.include_router(router)
-
-
-
+app.include_router(logs.router)
+app.include_router(stories.router)
 
 
 queue = Queue()
@@ -46,10 +48,9 @@ async def process_url(url: str, background_tasks: BackgroundTasks):
 async def process_queue():
     while not queue.empty():
         url = queue.get()
-        # Process the URL here
-        await asyncio.sleep(10)  # Simulate time-consuming process
-
-        
+        # TODO: GENERATE BUSINESS ANALYSIS
+        # TODO: get file pdf url and return to download
+        await asyncio.sleep(10)
         status_dict[url] = "done"
 
 @app.get("/status/{url}")
