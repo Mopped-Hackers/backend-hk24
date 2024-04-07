@@ -17,6 +17,9 @@ from .models import getDummyStory
 from .components.pdf.pdf import PdfGenerator
 from .models import DataStory, Functions, Readme
 import json
+
+from .components.github import GithubRepo
+
 from starlette.requests import Request
 app = FastAPI()
 router = APIRouter()
@@ -48,26 +51,39 @@ async def process_url(url: str, background_tasks: BackgroundTasks):
     return {"message": "URL added to the queue"}
 
 async def process_queue():
+    database: Mongo = app.state.database
     while not queue.empty():
         url = queue.get()
+
+        if database.getStory(url):
+            status_dict[url] = "done"
+            return
+
+        repo_dir = GithubRepo.download_repo(url)
+
         # TODO: GENERATE BUSINESS ANALYSIS
-        # TODO: get file pdf url and return to download
-        await asyncio.sleep(10)
+
         status_dict[url] = "done"
+        
 
 @app.get("/status/{url}")
 async def get_status(request: Request,url: str):
     database: Mongo = request.app.state.database
 
-    story = await database.getStory("my-example-refactor")
+    # DEMO OVERRIDE
+    #url = "my-example-refactor"
 
-    filename = f"./structured_output_{story.url}_{story.id}.pdf"
+    status: str = status_dict.get(url, "not found")
+    if status == "done":
+        story = await database.getStory(url)
+        filename = f"./structured_output_{story.url}_{story.id}.pdf"
+        output = f"{request.url.scheme}://{request.headers['host']}/static/{filename}"
+        return {"url": url, "status": status, "output": output}
+    else: 
+        return {"url":url, "status":status, "output": None}
 
-    output = f"{request.url.scheme}://{request.headers['host']}/static/{filename}"
 
-    return {"url": url, "status": status_dict.get(url, "not found"), "output": output}
-
-
+# DEMO GENERATION
 @app.get("/test-pdf")
 async def asf(request: Request):
     database: Mongo = request.app.state.database
