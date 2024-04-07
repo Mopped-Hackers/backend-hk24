@@ -300,7 +300,8 @@ def main(file_path):
 def main_from_json(file_json):
     function_data = []
     list_order = ['name', 'readme', 'business_stories', 'class_data', 'class_data_comments', 'functions']
-    data = json.loads(file_json)
+    data = file_json.dict()
+    print(data.keys())
     for key in list_order:
         if 'name' == key:
             add_section_title('Name')

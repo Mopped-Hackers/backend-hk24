@@ -4,6 +4,7 @@ import os
 import json
 from app.components.file_parser import find_routes
 
+import app.components.file_parser.find_routes as find_routes
 
 def find_py_files(root_directory):
     py_files = []
@@ -73,7 +74,6 @@ def get_function_names(filename, first_items):
     return function_names
 
 def print_directory_structure(startpath):
-    startpath = 'C:\\Users\\Peter\\Desktop\\full-stack-fastapi-template\\backend'
     """
     Returns the directory structure of a given path and lists function names for Python files.
 

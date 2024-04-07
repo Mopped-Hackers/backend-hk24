@@ -14,7 +14,7 @@ from .routers import stories
 import asyncio
 from typing import Dict
 from .models import getDummyStory
-from .components.pdf.pdf import PdfGenerator
+from app.components.pdf import pdf
 from .models import DataStory, Functions, Readme
 import json
 from app.components.llms import prompts
@@ -92,7 +92,6 @@ async def get_report(repo_dir, url, repo_name):
     if class_data_text and class_data_text != "":
         user_text, system_text = prompts.create_promp_for_data_classes(class_data_text)
         class_data_summary = engine.call_ollama("zephyr", system_text, user_text)
-
         for key in class_data_text:
 
             user_text_comments, system_text_comments = (
@@ -139,7 +138,6 @@ async def get_report(repo_dir, url, repo_name):
         "project_structure": code_structure,
         "business_stories": []
     }
-
     # return result_dict
 
     for story_name in business_stories.keys():
@@ -264,10 +262,10 @@ async def process_queue():
     while not queue.empty():
         url = queue.get()
 
-        if await database.getStory(url):
-            await database.removeStory(url)
-            # status_dict[url] = "done"
-            # return
+        # if await database.getStory(url):
+        #     await database.removeStory(url)
+        #     # status_dict[url] = "done"
+        #     # return
 
         repo_dir = GithubRepo.download_repo(url)
         repo_name = url.split("/")[-1]
@@ -287,11 +285,14 @@ async def get_status(request: Request, url: str):
     status: str = status_dict.get(url, "not found")
     if status == "done":
         story = await database.getStory(url)
+
         if story is None:
             return {"url": url, "status": status, "output": None}
         filename = f"./structured_output_{story.url}_{story.id}.pdf"
         output = f"{request.url.scheme}://{request.headers['host']}/static/{filename}"
-        GithubRepo.remove_repo(url)
+        
+        if url != "my-example-refactor":
+            GithubRepo.remove_repo(url)
         return {"url": url, "status": status, "output": output}
     else:
         return {"url": url, "status": status, "output": None}
@@ -299,11 +300,11 @@ async def get_status(request: Request, url: str):
 
 # DEMO GENERATION
 @app.get("/test-pdf")
-async def asf(request: Request):
+async def asf(request: Request, url: str):
     database: Mongo = request.app.state.database
 
-    exampleStory = await database.getStory("my-example-refactor")
+    exampleStory = await database.getStory(url)
 
-    PdfGenerator(request.app, exampleStory).generate_pdf()
+    pdf.main_from_json(exampleStory)
 
     return exampleStory

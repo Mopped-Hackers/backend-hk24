@@ -77,7 +77,7 @@ class Story(BaseModel):
 class DataStory(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     url: str = Field(...)  # Repository URL
-
+    name : str = Field(...)
     function_to_test: dict= Field(...)
     function_to_code: dict= Field(...)
     class_to_code: dict= Field(...)
@@ -86,7 +86,7 @@ class DataStory(BaseModel):
     readme: Readme= Field(...)
 
     functions: List[Functions]= Field(...)
-    
+    project_structure : str = Field(...)
     business_stories: List[Story]= Field(...)
     class_data: str= Field(...)
     class_data_comments: List[dict] = Field(...)
