@@ -23,7 +23,10 @@ class Mongo:
         return story
      
     async def getStory(self, url: str)-> DataStory:
-        return await self.storyCollection.find_one({"url": url})
+        story_dict = await self.storyCollection.find_one({"url": url})
+        if story_dict:
+            return DataStory(**story_dict)
+        return None
     
 
         

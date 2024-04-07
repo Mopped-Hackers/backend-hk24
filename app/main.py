@@ -14,8 +14,10 @@ from .routers import stories
 import asyncio
 from typing import Dict
 from .models import getDummyStory
-
+from .components.pdf.pdf import PdfGenerator
 from .models import DataStory, Functions, Readme
+import json
+from starlette.requests import Request
 app = FastAPI()
 router = APIRouter()
 
@@ -54,5 +56,21 @@ async def process_queue():
         status_dict[url] = "done"
 
 @app.get("/status/{url}")
-async def get_status(url: str):
-    return {"url": url, "status": status_dict.get(url, "not found")}
+async def get_status(request: Request,url: str):
+
+    filename = "structured_output_my-example-refactor_6611ecb35a85f949282289c1.pdf"
+
+    url = f"{request.url.scheme}://{request.headers['host']}/static/{filename}"
+
+    return {"url": url, "status": status_dict.get(url, "not found"), "output": url}
+
+
+@app.get("/test-pdf")
+async def asf(request: Request):
+    database: Mongo = request.app.state.database
+
+    exampleStory = await database.getStory("my-example-refactor")
+
+    PdfGenerator(request.app,exampleStory).generate_pdf()
+    
+    return exampleStory
