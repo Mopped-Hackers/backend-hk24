@@ -1,0 +1,6 @@
+Add comments to Pydantic model definition.
+Here is Pydantic dataclass:
+```
+{{dataclass}}
+```
+You can return only code. 

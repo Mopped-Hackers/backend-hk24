@@ -2,7 +2,7 @@ import ast
 import glob
 import os
 import json
-import find_routes
+from app.components.file_parser import find_routes
 
 
 def find_py_files(root_directory):

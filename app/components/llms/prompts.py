@@ -38,6 +38,16 @@ def create_prompt_for_commenting(function_content: str):
     system_text = system_template.render()
     return user_text, system_text
 
+def create_prompt_for_commenting_data_classes(function_content: str):
+    env = Environment(loader=FileSystemLoader("app/components/llms/agent_templates"))
+    user_template = env.get_template("dataclasses_comments_user.txt")
+    data = {"dataclass": function_content}
+    user_text = user_template.render(data)
+
+    system_template = env.get_template("dataclasses_comments_system.txt")
+    system_text = system_template.render()
+    return user_text, system_text
+
 
 def create_prompt_for_readme_summary(readme_content: str):
     env = Environment(loader=FileSystemLoader("app/components/llms/agent_templates"))

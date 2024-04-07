@@ -11,3 +11,4 @@ htmlcov
 be
 logs/
 .env
+app/uploads/repos/.*
