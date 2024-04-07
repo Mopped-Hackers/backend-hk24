@@ -65,18 +65,18 @@ async def process_queue():
     while not queue.empty():
         url = queue.get()
 
-        if database.getStory(url):
+        if await database.getStory(url):
             status_dict[url] = "done"
             return
 
         repo_dir = GithubRepo.download_repo(url)
+        print(repo_dir)
 
         # TODO: GENERATE BUSINESS ANALYSIS
-
         status_dict[url] = "done"
         
 
-@app.get("/status/{url}")
+@app.get("/status")
 async def get_status(request: Request,url: str):
     database: Mongo = request.app.state.database
 
@@ -86,8 +86,11 @@ async def get_status(request: Request,url: str):
     status: str = status_dict.get(url, "not found")
     if status == "done":
         story = await database.getStory(url)
+        if story is None:
+            return {"url":url, "status":status, "output": None}
         filename = f"./structured_output_{story.url}_{story.id}.pdf"
         output = f"{request.url.scheme}://{request.headers['host']}/static/{filename}"
+        GithubRepo.remove_repo(url)
         return {"url": url, "status": status, "output": output}
     else: 
         return {"url":url, "status":status, "output": None}

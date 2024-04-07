@@ -47,7 +47,7 @@ class Log(BaseModel):
     model: str = Field(...)
     raw_content: str = Field(...)
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 class Functions(BaseModel):
     path: str
@@ -93,7 +93,7 @@ class DataStory(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 def convert_to_data_story(result_dict, url) -> DataStory:
