@@ -90,6 +90,7 @@ async def get_status(request: Request,url: str):
             return {"url":url, "status":status, "output": None}
         filename = f"./structured_output_{story.url}_{story.id}.pdf"
         output = f"{request.url.scheme}://{request.headers['host']}/static/{filename}"
+        GithubRepo.remove_repo(url)
         return {"url": url, "status": status, "output": output}
     else: 
         return {"url":url, "status":status, "output": None}
