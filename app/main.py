@@ -65,7 +65,11 @@ async def process_queue():
     while not queue.empty():
         url = queue.get()
 
-        if await database.getStory(url):
+        story = await database.getStory(url)
+        if story is not None:
+            
+            PdfGenerator(app,story).generate_pdf()
+
             status_dict[url] = "done"
             return
 
