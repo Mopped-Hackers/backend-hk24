@@ -21,10 +21,20 @@ import json
 from .components.github import GithubRepo
 
 from starlette.requests import Request
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+MONGODB_URL: str = os.getenv("MONGODB_URL")
+
+
 app = FastAPI()
 router = APIRouter()
 
-app.state.database = Mongo("mongodb+srv://mongo-user:lK30SyUhSrIxND9Q@legacy-refactorer.bqdjbgf.mongodb.net/data?retryWrites=true&w=majority&appName=legacy-refactorer")
+
+app.state.database = Mongo(MONGODB_URL)
 
 app.add_middleware(
     CORSMiddleware,
