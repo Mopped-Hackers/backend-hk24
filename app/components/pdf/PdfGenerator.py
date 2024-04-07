@@ -19,8 +19,10 @@ class PdfGenerator:
         if not os.path.exists(uploads_folder):
             os.makedirs(uploads_folder)
         app.mount("/static", StaticFiles(directory=uploads_folder), name="static")
-    
-        self.filename = os.path.join(uploads_folder,f"./structured_output_{story.url}_{story.id}.pdf")
+
+        storyUrl = story.url.replace("https://", "").replace("http://", "").replace("/", "_")
+        
+        self.filename = os.path.join(uploads_folder,f"./structured_output_{storyUrl}_{story.id}.pdf")
         self.story: DataStory = story
 
 
@@ -49,6 +51,7 @@ class PdfGenerator:
         self.styles = getSampleStyleSheet()  
 
 
+        
     def add_section_title(self,title):
         self.flowables.append(Paragraph(title, self.styles['Heading1']))
         self.flowables.append(Spacer(1, 12))
@@ -86,6 +89,8 @@ class PdfGenerator:
         for section in story['story']:
             route = section['route']
             functions = section['functions']
+            order_summary = section['order_summary']
+            _story = section['story']
 
             # Add the route to the flowables
             self.flowables.append(Paragraph(f'<b>Route:</b> {route}', self.text_style))
@@ -100,6 +105,16 @@ class PdfGenerator:
                 self.flowables.append(Paragraph('<b>Functions:</b> No functions', self.text_style))
 
             self.flowables.append(Spacer(1, 12))
+
+            if len(order_summary) > 0:
+                lines = _story.split('\n')
+                formatted_summary = ''
+                for line in range(len(lines)):
+                    if line == 0:
+                        formatted_summary += f'<b>Case:</b><br />\n'
+                    line = re.sub(r'`([^`]+)`', r'<font name="Courier">\1</font>', lines[line])
+                    formatted_summary += line + '<br />\n'
+                self.flowables.append(Paragraph(formatted_summary, self.text_style))
 
 
     def add_class_data(self,class_data):
@@ -154,7 +169,6 @@ class PdfGenerator:
         content = text['content']
         lines = content.split('\n')
         formatted_summary = self.code_section(lines)
-        formatted_summary = formatted_summary.rstrip('<br />\n')
 
         self.flowables.append(Paragraph(formatted_summary, code_style))
         self.flowables.append(Spacer(1, 12))
@@ -190,16 +204,20 @@ class PdfGenerator:
         return f'<font name="Courier">{self.replace_html_entities(code_block)}</font>'
 
 
-    def add_function(self,function, function_data):
+    def add_function(self,function):
         # break the function into lines
         name = function['name']
         summary = function['summary']
+        file_path = function['path']
+        # take only the file name.py
         commented_code = function['code_with_comments']
         # break summary into lines
         lines = summary.split('\n')
         lines_code = commented_code.split('\n')
         # add the name of the function
-        function_data.append(Paragraph(f'<font>{name}</font>', self.styles['Heading2']))
+        self.flowables.append(Paragraph(f'<font>{name}</font>', self.styles['Heading2']))
+        self.flowables.append(Paragraph(f'<font>{file_path}</font>', self.styles['Heading4']))
+
         # add the summary of the function
         formatted_summary = ''
         for line in lines:
@@ -207,13 +225,12 @@ class PdfGenerator:
             line = re.sub(r'`([^`]+)`', r'<font name="Courier">\1</font>', line)
             formatted_summary += line + '<br />\n'
         formatted_summary = formatted_summary.rstrip('<br />\n')
-        function_data.append(Paragraph(formatted_summary, self.text_style))
-        function_data.append(Spacer(1, 12))
+        self.flowables.append(Paragraph(formatted_summary, self.text_style))
+        self.flowables.append(Spacer(1, 12))
 
         form = self.code_section(lines_code)
-        function_data.append(Paragraph(form, self.code_style))
-        function_data.append(Spacer(1, 12))
-        return function_data
+        self.flowables.append(Paragraph(form, self.code_style))
+        self.flowables.append(Spacer(1, 12))
 
 
     def add_function_to_test(self,key, function, test_data):
@@ -230,45 +247,72 @@ class PdfGenerator:
             return test_data
 
 
-    def generate_pdf(self):
+    def generate_project_structure_textual(self,project_structure):
 
+        # Function to recursively traverse the project structure dictionary and build the text tree
+        def traverse_project_structure(structure, prefix=""):
+            lines = []
+            # Sort the items to maintain a consistent order
+            items = sorted(structure.items())
+            for i, (name, content) in enumerate(items):
+                connector = "|--- " if i < len(items) - 1 else "|---- "
+                lines.append(prefix + connector + name + "\n")  # Add a newline character
+                if content:  # If the item has nested content
+                    if 'dirs' in content:
+                        # Recursively traverse directories
+                        ext = "|   " if i < len(items) - 1 else "    "
+                        lines.extend(traverse_project_structure(content['dirs'], prefix=prefix + ext))
+                    if 'files' in content:
+                        for file_name, functions in sorted(content['files'].items()):
+                            connector = "|----" if i < len(items) - 1 else "`-- "
+                            lines.append(prefix + "|   " + connector + file_name + "\n")  # Add a newline character
+                            if functions:
+                                for function_name in sorted(functions):
+                                    lines.append(prefix + "|       |----" + function_name + "()\n")  # Add a newline character
+            return lines
+
+        # Generate the project structure as text
+        return "".join(traverse_project_structure(project_structure))  # Join using empty string to utilize the newlines
+
+
+    def generate_pdf(self):
         data = self.story.model_dump()
         test_data, function_data = [], []
         
-        for key in data:
-                if 'url' == key:
-                    self.add_section_title(data[key])
+        list_order = ['name', 'readme', 'business_stories', 'class_data', 'class_data_comments', 'functions']
+
+        for key in list_order:
+                if 'name' == key:
+                    self.add_section_title('Name')
+                    self.flowables.append(Paragraph(data[key], self.styles['Heading1']))
+                    self.flowables.append(Spacer(1, 12))
                 if 'readme' == key:
-                    self.add_section_title('Readme summary')
+                    self.add_section_title('Project overview')
                     self.add_main_text_readme(data[key])
                     self.flowables.append(PageBreak())
                 if 'business_stories' == key:
-                    self.add_section_title('Business Stories')
+                    self.add_section_title('Business use cases')
                     for story in data[key]:
                         self.add_business_story(story)
                     self.flowables.append(PageBreak())
                 if 'class_data' == key:
-                    self.add_section_title('Class Data')
+                    self.add_section_title('Dataclasses overview')
                     self.add_class_data(data[key])
                     self.flowables.append(PageBreak())
                 if 'class_data_comments' == key:
-                    self.add_section_title('Class Data Comments')
+                    self.add_section_title('Dataclasses')
                     for comment in data[key]:
                         self.format_class_comment(comment)
                     self.flowables.append(PageBreak())
                 if 'functions' == key:
                     function_data.append(Paragraph('Functions', self.styles['Heading1']))
                     for function in data[key]:
-                        function_data = self.add_function(function, function_data)
+                        self.add_function(function)
                     function_data.append(PageBreak())
-                if 'function_to_test' == key:
-                    test_data.append(Paragraph('Function to Test', self.styles['Heading1']))
-                    for value in data[key].keys():
-                        test_data = self.add_function_to_test(value, data[key][value], test_data)
-                    test_data.append(PageBreak())
 
-        for test in test_data:
-            self.flowables.append(test)
-        for function in function_data:
-            self.flowables.append(function)
+        lines = self.generate_project_structure_textual(json.loads(data['project_structure']))
+        self.flowables.append(Paragraph('Project structure', self.styles['Heading1']))
+        for line in lines.split('\n'):
+            self.flowables.append(Paragraph(line, self.text_style))
+
         self.doc.build(self.flowables)

@@ -25,12 +25,12 @@ from .components.github import GithubRepo
 
 from starlette.requests import Request
 import os
-
+from app.components.pdf.PdfGenerator import PdfGenerator
 from dotenv import load_dotenv
 
 load_dotenv()
 
-MONGODB_URL: str = os.getenv("MONGO_URI")
+MONGODB_URL: str = os.getenv("MONGODB_URI")
 
 
 app = FastAPI()
@@ -55,14 +55,6 @@ app.include_router(stories.router)
 
 queue = Queue()
 status_dict: Dict[str, str] = {}
-
-
-@app.post("/process")
-async def process_url(url: str, background_tasks: BackgroundTasks):
-    queue.put(url)
-    status_dict[url] = "pending"
-    background_tasks.add_task(process_queue)
-    return {"message": "URL added to the queue"}
 
 
 async def get_report(repo_dir, url, repo_name):
@@ -256,6 +248,16 @@ async def get_report(repo_dir, url, repo_name):
 
     return result_dict
 
+##################################################################################
+
+
+@app.post("/process")
+async def process_url(url: str, background_tasks: BackgroundTasks):
+    queue.put(url)
+    status_dict[url] = "pending"
+    background_tasks.add_task(process_queue)
+    return {"message": "URL added to the queue"}
+
 
 async def process_queue():
     database: Mongo = app.state.database
@@ -267,11 +269,19 @@ async def process_queue():
         #     # status_dict[url] = "done"
         #     # return
 
-        repo_dir = GithubRepo.download_repo(url)
-        repo_name = url.split("/")[-1]
-        report = await get_report(repo_dir, url, repo_name)
-        story = DataStory(**report[url])
-        await database.saveStory(story)
+        
+        
+        #repo_dir = GithubRepo.download_repo(url)
+        #repo_name = url.split("/")[-1]
+        #report = await get_report(repo_dir, url, repo_name)
+        #story = DataStory(**report[url])
+        #await database.saveStory(story)
+        
+
+        story = await database.getStory(url)
+
+        PdfGenerator(app,story).generate_pdf()
+
         status_dict[url] = "done"
 
 
@@ -279,20 +289,21 @@ async def process_queue():
 async def get_status(request: Request, url: str):
     database: Mongo = request.app.state.database
 
-    # DEMO OVERRIDE
-    # url = "my-example-refactor"
-
     status: str = status_dict.get(url, "not found")
+
     if status == "done":
         story = await database.getStory(url)
 
         if story is None:
             return {"url": url, "status": status, "output": None}
-        filename = f"./structured_output_{story.url}_{story.id}.pdf"
+        
+        storyUrl = story.url.replace("https://", "").replace("http://", "").replace("/", "_")
+
+        filename = f"./structured_output_{storyUrl}_{story.id}.pdf"
+
         output = f"{request.url.scheme}://{request.headers['host']}/static/{filename}"
         
-        if url != "my-example-refactor":
-            GithubRepo.remove_repo(url)
+        #GithubRepo.remove_repo(url) # Remove Repo after succesfully generated pdf
         return {"url": url, "status": status, "output": output}
     else:
         return {"url": url, "status": status, "output": None}
@@ -305,6 +316,6 @@ async def asf(request: Request, url: str):
 
     exampleStory = await database.getStory(url)
 
-    pdf.main_from_json(exampleStory)
+    PdfGenerator(app,exampleStory).generate_pdf()
 
     return exampleStory
