@@ -1,6 +1,7 @@
 import ast
 import glob
 import os
+import json
 
 
 def find_py_files(root_directory):
@@ -94,6 +95,7 @@ def print_directory_structure(startpath):
                 structure[path_key]['files'][f] = get_function_names(file_path, first_items)
             else:
                 structure[path_key]['files'][f] = None
+    structure = json.dumps(structure)
     return structure
 
 def extract_class_attributes(file_path):
