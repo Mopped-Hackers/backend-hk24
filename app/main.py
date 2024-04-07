@@ -57,8 +57,11 @@ async def process_queue():
 
 @app.get("/status/{url}")
 async def get_status(request: Request,url: str):
+    database: Mongo = request.app.state.database
 
-    filename = "structured_output_my-example-refactor_6611ecb35a85f949282289c1.pdf"
+    story = await database.getStory("my-example-refactor")
+
+    filename = f"./structured_output_{story.url}_{story.id}.pdf"
 
     url = f"{request.url.scheme}://{request.headers['host']}/static/{filename}"
 
