@@ -5,10 +5,41 @@ from pydantic import ConfigDict, BaseModel, Field, EmailStr
 from pydantic.functional_validators import BeforeValidator
 from datetime import date, datetime, time, timedelta
 from bson import ObjectId
+from urllib.parse import unquote
 
 from typing_extensions import Annotated
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
+
+
+def getDummyStory():
+    dataStory: DataStory = DataStory(
+        url="test.com?time=" + str(datetime.now().timestamp()),
+        function_to_test={"test": "test"},
+        function_to_code={"test": "test"},
+        class_to_code={"test": "test"},
+        files=["test"],
+        readme=Readme(text="test", summary="test"),
+        functions=[
+            Functions(path="test", name="test", code="test", code_commented="test", summary="test")
+        ],
+        business_stories=[
+            Story(
+                name="test",
+                story=[
+                    StoryData(
+                        route="test",
+                        functions=["test"],
+                        order_summary=[{"test": "test"}],
+                        story="test"
+                    )
+                ]
+            )
+        ],
+        class_data="test",
+        class_data_comments=[{"test": "test"}]
+    )
+    return dataStory
 
 class Log(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
@@ -22,23 +53,48 @@ class Functions(BaseModel):
     path: str
     name: str
     code: str
-    code_commented: str
+    code_with_comments: str
     summary: str
+    test: str|List[str]
 
 class Readme(BaseModel):
     text: str
     summary: str
-  
+
+
+class StoryData(BaseModel):
+    route: str
+    functions: List[str]
+    order_summary: List[dict]
+    story: str
+
+
+class Story(BaseModel):
+    name: str = Field(...)
+    story: List[StoryData]= Field(...)
+        
+
 class DataStory(BaseModel):
-    key: str  # Repository URL
-    functions_to_test: dict
-    functions_to_code: dict
-    files: List[str]
-    functions: List[Functions]
-    readme: Readme
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    url: str = Field(...)  # Repository URL
+
+    function_to_test: dict= Field(...)
+    function_to_code: dict= Field(...)
+    class_to_code: dict= Field(...)
+    
+    files: List[str]= Field(...)
+    readme: Readme= Field(...)
+
+    functions: List[Functions]= Field(...)
+    
+    business_stories: List[Story]= Field(...)
+    class_data: str= Field(...)
+    class_data_comments: List[dict] = Field(...)
 
     class Config:
         arbitrary_types_allowed = True
+        allow_population_by_field_name = True
+
 
 def convert_to_data_story(result_dict, url) -> DataStory:
     # Extract the necessary data from the dictionary

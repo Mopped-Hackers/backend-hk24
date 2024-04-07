@@ -15,10 +15,17 @@ def extract_repo_name_from_url(url):
         return parts[2]  # This handles URLs that start directly with 'github.com'
 
 
-def download_repo(url: str, targetDir: str) -> bool:
-    try:
-        Repo.clone_from(url, os.path.join(targetDir, extract_repo_name_from_url(url)))
-    except:
-        return False
+def download_repo(url: str) -> str:
 
-    return True
+    root_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    uploads_repo_folder = os.path.join(root_path, 'uploads/repos')
+    if not os.path.exists(uploads_repo_folder):
+        os.makedirs(uploads_repo_folder)
+
+    path = os.path.join(uploads_repo_folder, extract_repo_name_from_url(url))
+    try:
+        Repo.clone_from(url, path)
+    except:
+        raise Exception
+
+    return path
