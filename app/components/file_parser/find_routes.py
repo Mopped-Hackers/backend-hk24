@@ -144,5 +144,4 @@ def main(directory_path):
     functions = append_dependencies_functions(functions, new_functions)
     functions = remove_non_local_functions(functions, local_functions)
     output = make_output(functions)
-    print(output)
     return output

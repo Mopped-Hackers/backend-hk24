@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.get("/test_summary")
 async def test_summary():
-    
+
     result_dict = {}
     url = "KAPPA"
     project_repository_path = "/Users/williambrach/Developer/hackkosice/hk-2024/full-stack-fastapi-template/backend"
@@ -20,15 +20,23 @@ async def test_summary():
 
     if readme_text and readme_text != "":
         user_text, system_text = prompts.create_prompt_for_readme_summary(readme_text)
-        # readme_summary = engine.call_openai("gpt-4", system_text, user_text)
-        readme_summary = " "
+        readme_summary = engine.call_openai("gpt-4", system_text, user_text)
+        # readme_summary = " "
 
+    print("README DONE")
+
+    class_data_list = list()
     class_data_text = functions.find_attributes_models(project_repository_path)
     if class_data_text and class_data_text != "":
         user_text, system_text = prompts.create_promp_for_data_classes(class_data_text)
-        #class_data_summary = engine.call_openai("gpt-4", system_text, user_text)
-        class_data_summary = " "
+        class_data_summary = engine.call_ollama("zephyr", system_text, user_text)
 
+        for key in class_data_text:
+            user_text_comments, system_text_comments = prompts.create_prompt_for_commenting(class_data_text[key])
+            class_data_comments = engine.call_ollama("zephyr", system_text_comments, user_text_comments)
+            class_data_list.append({"name": key, "content": class_data_comments})
+
+    print("CLASS DATA DONE")
     root_dir = project_repository_path + "/"
 
     python_files = functions.find_py_files(root_dir)
@@ -49,6 +57,7 @@ async def test_summary():
     business_stories = find_routes.main(project_repository_path)
 
     result_dict[url] = {
+        "url" : url,
         "function_to_code": function_name_to_code,
         "class_to_code": class_to_code,
         "function_to_test": fuction_to_test,
@@ -57,6 +66,7 @@ async def test_summary():
         "functions": [],
         "business_stories": {},
         "class_data": class_data_summary,
+        "class_data_comments": class_data_list
     }
 
     for story_name in business_stories.keys():
@@ -79,16 +89,16 @@ async def test_summary():
                     )
                 else:
                     user_text, system_text = prompts.create_prompt_for_summary(code)
-                # summary = engine.call_ollama("zephyr", system_text, user_text)
-                summary = " "
+                summary = engine.call_ollama("zephyr", system_text, user_text)
+                # summary = " "
 
                 user_text_with_comments, system_text_with_comments = (
                     prompts.create_prompt_for_commenting(code)
                 )
-                code_with_comments = " "
-                # code_with_comments = engine.call_ollama(
-                #     "codellama", system_text_with_comments, user_text_with_comments
-                # )
+                # code_with_comments = " "
+                code_with_comments = engine.call_ollama(
+                    "codellama", system_text_with_comments, user_text_with_comments
+                )
                 result_dict[url]["functions"].append(
                     {
                         "name": function,
@@ -99,12 +109,21 @@ async def test_summary():
                         "test": test,
                     }
                 )
-    ds = models.convert_to_data_story(result_dict, url)
-    return ds
+    print("functions done")
+    # ds = models.convert_to_data_story(result_dict, url)
+    # return ds
 
     story_summs = []
+    result_dict[url]["business_stories"] = []
     for story_name in business_stories.keys():
+        bs = {
+            "name": story_name,
+            "story" : []
+        }
+        print(story_name)
         for story_route, story_functions in business_stories[story_name].items():
+            print(story_route)
+        
             fix_story_functions = []
             for function in story_functions:
                 if "router" in function:
@@ -112,6 +131,8 @@ async def test_summary():
                 if "." in function:
                     function = function.split(".")[1]
                 fix_story_functions.append(function)
+
+
 
             index = 1
             prompt = ""
@@ -126,6 +147,41 @@ async def test_summary():
                 prompts.create_prompt_for_story_order(prompt)
             )
             story_summary = engine.call_openai("gpt-4", story_system_prompt, story_user_prompt)
+            story_summary = prompts.fix_analysis_response(story_summary)
+            story_summs.append(story_summary)
+
+            prompt = ""
+            for s in story_summary:
+                i = [s_i['name'] for s_i in s['items']]
+                for z in i:
+                    for func in result_dict[url]["functions"]:
+                        if z == func["name"]:
+                            prompt += f"""function name : {f}, 
+                            function summary :  {func['summary']},
+                            function code : {func['code']}"""
+            
+            story_user_prompt, story_system_prompt = (
+                prompts.create_prompt_for_story(prompt)
+            )
+            story = engine.call_openai("gpt-4", story_system_prompt, story_user_prompt)
+            bs['story'].append({
+                "route": story_route,
+                "functions": fix_story_functions,
+                'order_summary': story_summary,
+                'story' : story
+            })
+        result_dict[url]["business_stories"].append(bs)
+
+    print(result_dict)
+    try:
+        import json
+        json.dump(result_dict, open("data.json", "w"), indent=2)
+    except Exception as e:
+        print(e)
+
+    return result_dict
+
+
 #             story_summary = """
 #                         Based on the business story timeline, the categories can be grouped into "User Management", "Email Management", and "Security Management". Here is the JSON schema format:
 
@@ -209,22 +265,3 @@ async def test_summary():
 # }
 # ```
 #             """
-
-            story_summary = prompts.fix_analysis_response(story_summary)
-            story_summs.append(story_summary)
-            prompt = ""
-            for s in story_summary:
-                i = [s_i['name'] for s_i in s['items']]
-                for z in i:
-                    for func in result_dict[url]["functions"]:
-                        if z == func["name"]:
-                            prompt += f"""function name : {f}, 
-                            function summary :  {func['summary']},
-                            function code : {func['code']}"""
-            
-            story_user_prompt, story_system_prompt = (
-                prompts.create_prompt_for_story(prompt)
-            )
-            story = engine.call_openai("gpt-4", story_system_prompt, story_user_prompt)
-
-            return {"prompts": story_summs, "splits": story}

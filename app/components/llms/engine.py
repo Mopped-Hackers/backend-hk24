@@ -37,6 +37,9 @@ def call_openai(model: str, system_message: str, user_message: str):
 
     if "gpt-4" in model:
         model = OPENAI_MODEL_NAME_GPT4
+    
+    if "gpt-3" in model:
+        model = "turbo-sommify"
 
     client = AzureOpenAI(
         azure_endpoint=OPENAI_ENDPOINT,

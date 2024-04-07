@@ -107,21 +107,24 @@ def fix_analysis_response(response: str):
         response = response.split("```")[1:2][0].replace("json", "")
         response = json.loads(response)["groupings"]
         return response
-    except Exception:
+    except Exception as e:
+        print(e)
         response = []
 
     try:
         response = json.loads(response)
         response = response["groupings"]
         return response
-    except Exception:
+    except Exception as e:
+        print(e)
         response = []
 
     try:
         response = json.loads(response.replace("```", "").replace("json", ""))
         response = response["groupings"]
         return response
-    except Exception:
+    except Exception as e:
+        print(e)
         response = []
 
     return response
